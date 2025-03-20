@@ -50,6 +50,8 @@ const AirMonitorDashboard = () => {
         { gas: "PM10", value: pm10, description: "Particulate Matter (PM10) consists of airborne particles that can irritate the lungs and heart." },
         { gas: "PM2.5", value: pm2_5, description: "PM2.5 particles are fine inhalable particles that pose a significant health risk, especially for the respiratory system." },
         { gas: "SO₂", value: so2, description: "Sulfur Dioxide (SO₂) is produced by industrial processes and can cause respiratory problems when inhaled." },
+        { gas: "AQI", value: aqi, description: "Air Quality Index (AQI) is a measure of air quality, indicating how polluted the air currently is or how polluted it is forecast to become." },
+        
     ];
 
     return (
