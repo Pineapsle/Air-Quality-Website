@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
+import { PolarGrid, PolarAngleAxis, PolarRadiusAxis, RadarChart, Radar, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import './AirMonitor.css'; // Import the CSS file
 
 const API_KEY = process.env.REACT_APP_AIR_MONITOR_API_KEY; 
@@ -39,7 +39,7 @@ const AirMonitorDashboard = () => {
     const { avgtemp_c, avghumidity, daily_chance_of_rain, maxwind_mph } = weather_data;
 
     const gasGraphData = [
-        { name: "CO₂ (CO)", value: co },
+        { name: "CO (CO)", value: co },
         { name: "NO₂", value: no2 },
         { name: "O₃", value: o3 },
         { name: "PM10", value: pm10 },
@@ -120,6 +120,18 @@ const AirMonitorDashboard = () => {
                         <Legend />
                         <Bar dataKey="value" fill="#FF6F61" />
                     </BarChart>
+                </ResponsiveContainer>
+
+                {/* PieChart for Detailed Data */}
+                <h2 className="chart-title">Detailed Air Quality Data</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart data={gasGraphData}>
+                    <PolarGrid />
+                        <PolarAngleAxis dataKey="name" />
+                        <PolarRadiusAxis angle={30} domain={[0, 150]} />
+                        <Radar name="Gases" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                        <Legend />
+                    </RadarChart>
                 </ResponsiveContainer>
             </div>
         </div>
