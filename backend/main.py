@@ -11,8 +11,8 @@ import base64
 from flask_cors import CORS
 
 app = Flask(__name__)
-
 CORS(app)
+
 # Load dataset
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(BASE_DIR, 'air_data.csv')
@@ -26,46 +26,52 @@ data['Year'] = data['Date'].dt.year
 data['Month'] = data['Date'].dt.month
 data['Day'] = data['Date'].dt.day
 
-# Encode categorical variables
-data = pd.get_dummies(data, columns=['Country', 'Status'], drop_first=True)
+# Encode categorical variables (matching front-end encoding)
+data['Country_United States of America'] = (data['Country'] == 'United States of America').astype(int)
+data['Status_Moderate'] = (data['Status'] == 'Moderate').astype(int)
 
-# Separate features and target
-X = data.drop(columns=['Date', 'AQI Value']).values.astype(np.float32)
+# Prepare features
+feature_columns = ['Year', 'Month', 'Day', 'Country_United States of America', 'Status_Moderate']
+X = data[feature_columns].values.astype(np.float32)
 y = data['AQI Value'].values.astype(np.float32)
+
+# Normalization
+X_mean = X.mean(axis=0)
+X_std = X.std(axis=0)
+X_normalized = (X - X_mean) / X_std
 
 # PyTorch Model
 class AQIPredictor(nn.Module):
     def __init__(self, input_size):
         super(AQIPredictor, self).__init__()
-        self.fc1 = nn.Linear(input_size, 16)
-        self.fc2 = nn.Linear(16, 8)
-        self.fc3 = nn.Linear(8, 1)
+        self.fc1 = nn.Linear(input_size, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 16)
+        self.fc4 = nn.Linear(16, 1)
 
     def forward(self, x):
-        x = torch.relu(self.fc1(x)) 
-        x = torch.relu(self.fc2(x)) 
-        return self.fc3(x)
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        return self.fc4(x)
 
 # Initialize model
-input_size = X.shape[1]
+input_size = X_normalized.shape[1]
 model = AQIPredictor(input_size)
 
 # Train model
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-X_tensor = torch.tensor(X, dtype=torch.float32)
+X_tensor = torch.tensor(X_normalized, dtype=torch.float32)
 y_tensor = torch.tensor(y, dtype=torch.float32).view(-1, 1)
 
-for epoch in range(500):
+for epoch in range(1000):
     optimizer.zero_grad()
     outputs = model(X_tensor)
     loss = criterion(outputs, y_tensor)
     loss.backward()
     optimizer.step()
-
-# Save feature columns
-feature_columns = [col for col in data.columns if col not in ['Date', 'AQI Value']]
 
 # Visualization function
 def create_aqi_visualization(data):
@@ -76,53 +82,46 @@ def create_aqi_visualization(data):
     plt.ylabel('AQI Value')
     plt.xticks(rotation=45)
     
-    # Save plot to a buffer
     buf = io.BytesIO()
     plt.tight_layout()
     plt.savefig(buf, format='png')
     plt.close()
     
-    # Encode the image to base64
     return base64.b64encode(buf.getvalue()).decode('utf-8')
-
-# Root route
-@app.route('/', methods=['GET'])
-def home():
-    return "AQI Prediction API is running!", 200
 
 # Prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         # Get JSON data from the request
-        data = request.get_json()
+        input_data = request.get_json()
 
-        # Check if all necessary fields are present
+        # Validate input
         required_fields = ['Year', 'Month', 'Day', 'Country_United States of America', 'Status_Moderate']
         for field in required_fields:
-            if field not in data:
+            if field not in input_data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
-        # Extract features from the data
-        features = [
-            data['Year'],
-            data['Month'],
-            data['Day'],
-            data['Country_United States of America'],
-            data['Status_Moderate'],
+        # Prepare input features
+        input_features = [
+            input_data['Year'], 
+            input_data['Month'], 
+            input_data['Day'], 
+            input_data['Country_United States of America'], 
+            input_data['Status_Moderate']
         ]
 
-        # Convert features to a numpy array and make prediction
-        input_array = np.array(features).reshape(1, -1).astype(np.float32)
-        input_tensor = torch.tensor(input_array)
+        # Normalize input features
+        input_normalized = (np.array(input_features).astype(np.float32) - X_mean) / X_std
+        input_tensor = torch.tensor(input_normalized).unsqueeze(0)
 
         # Prediction
         with torch.no_grad():
-            prediction = model(input_tensor).item()  # Convert prediction to a number
+            prediction = model(input_tensor).item()
 
         # Prepare the response
         response = {
-            "prediction": prediction,
+            "prediction": float(prediction),
             "feature_details": {
                 "total_samples": len(data),
                 "mean_aqi": data['AQI Value'].mean(),
@@ -137,6 +136,13 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# Run the app
+# Root route
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "status": "AQI Prediction API is running",
+        "available_endpoints": ["/predict"]
+    }), 200
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
