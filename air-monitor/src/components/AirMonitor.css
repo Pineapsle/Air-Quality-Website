@@ -1,0 +1,52 @@
+/* AirMonitor.css */
+
+.dashboard-container {
+    font-family: 'Arial', sans-serif;
+    padding: 20px;
+    text-align: center;
+}
+
+.dashboard-title {
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+.summary-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+}
+
+.summary-card {
+    width: 250px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    background-color: #f7fbf8;
+}
+
+.card-title {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.card-value {
+    font-size: 1.5em;
+    margin: 10px 0;
+}
+
+.card-description {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.chart-section {
+    margin-top: 40px;
+}
+
+.chart-title {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
