@@ -44,7 +44,7 @@ X_normalized = (X - X_mean) / X_std
 class AQIPredictor(nn.Module):
     def __init__(self, input_size):
         super(AQIPredictor, self).__init__()
-        self.fc1 = nn.Linear(input_size, 64)
+        self.fc1 = nn.Linear(input_size, 64) 
         self.fc2 = nn.Linear(64, 32)
         self.fc3 = nn.Linear(32, 16)
         self.fc4 = nn.Linear(16, 1)
